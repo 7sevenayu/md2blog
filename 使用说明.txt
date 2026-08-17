@@ -28,12 +28,13 @@ MD2Blog — 拖入 Markdown，自动发布为博客草稿（支持特色图 + �
   MD2Blog.exe 文章.md 封面.png -quiet   （不弹窗，结果写入 publish-result.txt）
 
 【配置】
-- 配置文件 blog-config.json 与 EXE 同目录：
-    site     = 博客地址（默认 http://www.7sevenayu123456.top）
+- 配置文件 blog-config.json 与 EXE 同目录（DPAPI 加密存储，仅本机当前用户可读）：
+    site     = 博客地址（如 https://example.com，首次启动时在登录界面填写）
     user     = WordPress 登录用户名
     password = WordPress 登录密码
     status   = 发布状态：draft=草稿（默认）/ publish=直接发布
-- 删除该文件后再次运行，会弹出窗口让你重新填写并保存。
+- 首次启动自动弹出登录界面；登录界面可点「测试连接」验证凭据。
+- 删除该文件后再次运行，会弹出登录界面让你重新填写并保存。
 
 【技术说明】
 - 发布走 XML-RPC：wp.newPost 建草稿 → wp.uploadFile 传图 →
@@ -44,7 +45,7 @@ MD2Blog — 拖入 Markdown，自动发布为博客草稿（支持特色图 + �
 - Markdown 首行 "# 标题" 作为文章标题；没有则用文件名。
 
 【注意】
-1. 密码以明文保存在 blog-config.json 中，请勿外传该文件；
+1. 密码以 DPAPI 加密保存在 blog-config.json 中，请勿外传该文件；
    建议定期修改博客密码（改后同步更新此文件）。
 2. 站点需开启 XML-RPC（默认开启）。若后台装过安全插件禁用了
    xmlrpc.php，发布会失败，需在插件里放行。
@@ -52,6 +53,6 @@ MD2Blog — 拖入 Markdown，自动发布为博客草稿（支持特色图 + �
 4. 大图片上传较慢，请耐心等待。
 
 【文件清单】
-  MD2Blog.exe        主程序（约 31 KB，无需安装，依赖系统 .NET Framework 4.x）
-  blog-config.json   博客配置
+  MD2Blog.exe        主程序（约 43 KB，无需安装，依赖系统 .NET Framework 4.x）
+  blog-config.json   博客配置（加密）
   MD2Blog.cs         源代码（可用 csc 重新编译）

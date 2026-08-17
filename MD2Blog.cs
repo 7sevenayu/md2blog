@@ -18,7 +18,7 @@ using System.Windows.Forms;
 
 public class BlogConfig
 {
-    public string site = "http://www.7sevenayu123456.top";
+    public string site = "";
     public string user = "";
     public string password = "";
     public string status = "draft";
@@ -492,38 +492,101 @@ public static class Blogger
 public class ConfigForm : Form
 {
     TextBox tSite, tUser, tPass, tStatus;
+    Label testResult;
+    Button btnTest;
     public BlogConfig Result;
 
     public ConfigForm(BlogConfig cur)
     {
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96F, 96F);
-        Text = "博客配置";
+        Text = "登录到你的 WordPress 博客";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(420, 230);
+        ClientSize = new Size(500, 320);
 
-        int y = 15;
-        tSite = AddRow("站点 URL:", cur.site, ref y);
+        var title = new Label { Text = "MD2Blog 登录设置", Font = new Font("Microsoft YaHei", 14, FontStyle.Bold), Location = new Point(15, 12), AutoSize = true };
+        var desc = new Label { Text = "填写你的 WordPress 博客信息，用于发布文章与草稿管理", Font = new Font("Microsoft YaHei", 9), Location = new Point(15, 46), AutoSize = true, ForeColor = Color.Gray };
+        Controls.Add(title);
+        Controls.Add(desc);
+
+        int y = 82;
+        tSite = AddRow("站点 URL:", cur.site, ref y, false, "https://你的博客地址");
         tUser = AddRow("用户名:", cur.user, ref y);
-        tPass = AddRow("应用密码/密码:", cur.password, ref y, true);
-        tStatus = AddRow("发布状态 (draft/publish):", cur.status, ref y);
+        tPass = AddRow("密码:", cur.password, ref y, true);
+        tStatus = AddRow("发布状态:", cur.status, ref y, false, "draft（草稿）/ publish（直接发布）");
 
-        var ok = new Button { Text = "保存", DialogResult = DialogResult.OK, Location = new Point(140, y + 5), Size = new Size(120, 30) };
+        testResult = new Label { Text = "", Location = new Point(140, y + 6), AutoSize = true, ForeColor = Color.Gray };
+        Controls.Add(testResult);
+
+        btnTest = new Button { Text = "测试连接", Location = new Point(15, y + 2), Size = new Size(110, 32) };
+        btnTest.Click += (s, e) => TestConnection();
+        Controls.Add(btnTest);
+
+        var ok = new Button { Text = "保存", DialogResult = DialogResult.OK, Location = new Point(230, y + 2), Size = new Size(120, 32) };
         ok.Click += (s, e) => Save();
         Controls.Add(ok);
         AcceptButton = ok;
     }
 
-    TextBox AddRow(string label, string value, ref int y, bool password = false)
+    TextBox AddRow(string label, string value, ref int y, bool password = false, string placeholder = "")
     {
-        Controls.Add(new Label { Text = label, Location = new Point(15, y + 5), AutoSize = true });
-        var tb = new TextBox { Text = value, Location = new Point(140, y), Width = 260, UseSystemPasswordChar = password };
+        Controls.Add(new Label { Text = label, Location = new Point(15, y + 6), AutoSize = true });
+        var tb = new TextBox { Text = value, Location = new Point(140, y), Width = 330 };
+        if (password) tb.UseSystemPasswordChar = true;
+        if (placeholder.Length > 0 && value.Length == 0)
+        {
+            tb.ForeColor = Color.Gray;
+            tb.Text = placeholder;
+            tb.GotFocus += (s, e) => { if (tb.Text == placeholder) { tb.Text = ""; tb.ForeColor = Color.Black; } };
+            tb.LostFocus += (s, e) => { if (tb.Text.Length == 0) { tb.Text = placeholder; tb.ForeColor = Color.Gray; } };
+        }
         Controls.Add(tb);
-        y += 35;
+        y += 36;
         return tb;
+    }
+
+    async void TestConnection()
+    {
+        string site = tSite.Text.Trim();
+        string user = tUser.Text.Trim();
+        string pass = tPass.Text;
+        if (site.Length == 0 || user.Length == 0 || pass.Length == 0)
+        {
+            testResult.Text = "✗ 请先填写完整信息";
+            testResult.ForeColor = Color.Red;
+            return;
+        }
+        btnTest.Enabled = false;
+        testResult.Text = "连接中...";
+        testResult.ForeColor = Color.Gray;
+        try
+        {
+            var cfg = new BlogConfig { site = site, user = user, password = pass };
+            string resp = await Blogger.CallAsync(cfg,
+                "<?xml version=\"1.0\"?><methodCall><methodName>wp.getUsersBlogs</methodName><params>" +
+                "<param><value><string>" + MdToHtml.EscapeXml(user) + "</string></value></param>" +
+                "<param><value><string>" + MdToHtml.EscapeXml(pass) + "</string></value></param>" +
+                "</params></methodCall>");
+            if (resp.Contains("<fault>"))
+            {
+                testResult.Text = "✗ 凭据无效或站点不可达";
+                testResult.ForeColor = Color.Red;
+            }
+            else
+            {
+                testResult.Text = "✓ 连接成功，凭据有效";
+                testResult.ForeColor = Color.Green;
+            }
+        }
+        catch (Exception ex)
+        {
+            testResult.Text = "✗ 连接失败: " + ex.Message;
+            testResult.ForeColor = Color.Red;
+        }
+        finally { btnTest.Enabled = true; }
     }
 
     void Save()
@@ -532,7 +595,8 @@ public class ConfigForm : Form
         Result.site = tSite.Text.Trim();
         Result.user = tUser.Text.Trim();
         Result.password = tPass.Text;
-        Result.status = tStatus.Text.Trim().Length > 0 ? tStatus.Text.Trim() : "draft";
+        string st = tStatus.Text.Trim().ToLowerInvariant();
+        Result.status = (st == "publish") ? "publish" : "draft";
     }
 }
 
