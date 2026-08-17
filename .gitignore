@@ -1,0 +1,18 @@
+# 个人配置（含加密的博客密码），绝不上传
+blog-config.json
+publish-result.txt
+
+# 构建产物
+*.exe
+bin/
+obj/
+
+# 日志
+*.log
+pet-log.txt
+
+# 系统/编辑器
+Thumbs.db
+Desktop.ini
+.vs/
+.idea/

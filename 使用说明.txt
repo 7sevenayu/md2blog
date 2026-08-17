@@ -1,0 +1,57 @@
+MD2Blog — 拖入 Markdown，自动发布为博客草稿（支持特色图 + 草稿管理）
+=====================================================================
+
+【两大功能】
+① 发布：拖入 .md（可配图）→ 自动发布为草稿
+② 管理：主窗口点「📝 管理草稿特色图」→ 列出所有草稿 →
+   选中一篇 → 预览当前特色图 → 更换 / 清除
+
+【怎么用 - 发布】
+1. 双击 MD2Blog.exe 打开主窗口
+2. 把 .md 文件拖到窗口上（可一次拖多篇）
+3. 同时拖入 .png/.jpg/.jpeg/.gif/.webp 图片，自动上传并设为该篇特色图
+   （多篇时第 N 篇配第 N 张图；图片不够的篇目不设）
+4. 自动完成：Markdown→HTML → 发布草稿 → 上传图片 → 设置特色图 → 弹结果
+
+【怎么用 - 草稿特色图管理】
+1. 主窗口点「📝 管理草稿特色图」
+2. 左侧列表显示所有草稿（ID / 标题 / 是否有特色图），自动加载
+3. 点选一篇 → 右侧立即显示：
+   - 文章标题、特色图附件 ID、图片 URL
+   - 特色图预览图（原图直接显示）
+4. 不满意？点「更换特色图...」→ 选新图 → 自动上传并替换
+   点「清除特色图」→ 移除该篇特色图
+5. 改完点「刷新列表」可重新拉取最新状态
+
+【也可以命令行用】
+  MD2Blog.exe 文章.md [封面.png]
+  MD2Blog.exe 文章.md 封面.png -quiet   （不弹窗，结果写入 publish-result.txt）
+
+【配置】
+- 配置文件 blog-config.json 与 EXE 同目录：
+    site     = 博客地址（默认 http://www.7sevenayu123456.top）
+    user     = WordPress 登录用户名
+    password = WordPress 登录密码
+    status   = 发布状态：draft=草稿（默认）/ publish=直接发布
+- 删除该文件后再次运行，会弹出窗口让你重新填写并保存。
+
+【技术说明】
+- 发布走 XML-RPC：wp.newPost 建草稿 → wp.uploadFile 传图 →
+  wp.editPost 的 post_thumbnail 字段设特色图
+  （wp.setPostThumbnail 不是 WordPress 核心方法，多数站点没有，故用 editPost）
+- 草稿列表：wp.getPosts 拉 ID → wp.getPost 逐篇取标题/特色图
+- 清除特色图：wp.editPost 的 post_thumbnail 传空值
+- Markdown 首行 "# 标题" 作为文章标题；没有则用文件名。
+
+【注意】
+1. 密码以明文保存在 blog-config.json 中，请勿外传该文件；
+   建议定期修改博客密码（改后同步更新此文件）。
+2. 站点需开启 XML-RPC（默认开启）。若后台装过安全插件禁用了
+   xmlrpc.php，发布会失败，需在插件里放行。
+3. 只处理 .md / .markdown 文件；图片支持 png/jpg/jpeg/gif/webp/bmp。
+4. 大图片上传较慢，请耐心等待。
+
+【文件清单】
+  MD2Blog.exe        主程序（约 31 KB，无需安装，依赖系统 .NET Framework 4.x）
+  blog-config.json   博客配置
+  MD2Blog.cs         源代码（可用 csc 重新编译）
